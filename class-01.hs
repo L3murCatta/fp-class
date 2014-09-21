@@ -247,25 +247,35 @@ eval_a_n :: (Num a, Eq a) => a -> a
 eval_a_n n = if n == 1 then 1 else if n == 2 then 2 else if n == 3 then 3 else eval_a_n (n-1) + eval_a_n (n-2) - 2*eval_a_n (n-3)
 
 -- в) Вычислить, пользуясь рекурсией, n-ю степень числа a (n - целое):
-pow :: Num a => a -> (Num n, Ord n) => n -> a	
+pow :: (Num a, Num n, Ord n) => a -> n -> a	
 pow a n = if n == 1 then a else a*pow a (n-1)
 
 -- г) Пользуясь ранее написанной функцией pow, вычислить сумму: 1^k + 2^k + ... + n^k.
-sum_nk :: (Num n, Eq n) => n -> (Num k, Ord k) => k -> n
+sum_nk :: (Num n, Eq n, Num k, Ord k) => n -> k -> n
 sum_nk n k = if n == 1 then 1 else pow n k + sum_nk (n-1) k
 
 -- д) Сумма факториалов чисел от 1 до n.
 sum_fact 1 = 1
 sum_fact n = fact n + sum_fact (n-1)
   where
-    fact n = 
+    fact n = if n < 2 then 1 else n * fact (n-1) 
 
 -- е) Количество цифр целого числа
-number_digits = undefined
+number_digits :: (Integral n, Ord n) => n -> n
+number_digits n
+  | n < 0 = number_digits (-n)
+  | -1 < n && n < 10 = 1
+  | otherwise = 1 + number_digits (div n 10)
 
 -- ж) Проверить, является ли заданное число простым.
-isPrime = undefined
-
+isPrime :: (Integral n) => n -> Bool
+isPrime n
+  | n < 2 = False
+  | n < 4 = True
+  | otherwise = isProbablePrime n (n-1)
+  where
+    isProbablePrime n k = if k == 1 then True else mod n k /= 0 && isProbablePrime n (k-1)
+	
 -- 8) Разное
 
 {-
@@ -276,6 +286,7 @@ isPrime = undefined
   а 1200 и 2000 — являются).
 -}
 
-nDays year = undefined
+nDays :: (Eq n, Integral n, Num n) => n -> n
+nDays year = if isLeap year then 366 else 365
   where
-    isLeap = undefined
+    isLeap n = if mod n 400 == 0 then True else if mod n 100 == 0 then False else mod n 4 == 0
