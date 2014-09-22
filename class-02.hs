@@ -84,7 +84,7 @@ combine_plus (x:xs) (y:ys) = (x+y):combine_plus xs ys
 -- 2.6
 -- Даны два списка. Сформировать новый список, содержащий пары из соответствующих элементов
 -- исходных списков. Хвост более длинного списка отбросить.
-combine_merge :: [Int] -> [Int] -> [(Int,Int)]
+combine_merge :: [a] -> [b] -> [(a,b)]
 combine_merge [] ys = []
 combine_merge xs [] = []
 combine_merge (x:xs) (y:ys) = (x,y):combine_merge xs ys
@@ -116,26 +116,76 @@ joinList n (x:xs) = x:n:(joinList n xs)
 -- Написать функцию, которая разбивает список на два подсписка: элементы из начала списка,
 -- совпадающие с первым элементом, и все остальные элементы, например:
 -- [1,1,1,2,3,1] -> ([1,1,1], [2,3,1]).
-firstId :: Eq n => n -> [n] -> ([n], [n])
-firstId i [] = ([],[])
-firstId i x = copyFirst x (firstDiff )
+
+
+copyFirst :: (Eq n, Num n) => [n] -> n -> [n]
+copyFirst [] _ = []
+copyFirst _ 0 = []
+copyFirst [x] 1 = [x]
+copyFirst (x:xs) n = x:(copyFirst xs (n-1))
+
+copySince :: (Eq n, Num n) => [n] -> n -> [n]
+copySince [] _ = []
+copySince x 0 = x
+copySince [x] _ = []
+copySince (x:xs) n = copySince xs (n-1)
+
+firstDiff :: (Eq n, Num n) => [n] -> n
+firstDiff [] = 0
+firstDiff [n] = 1
+firstDiff (x:y:xs) = if x == y then 1 + firstDiff(y:xs) else 1
+	
+firstId :: (Eq n, Num n) => [n] -> ([n],[n])
+firstId [] = ([],[])
+firstId x = (copyFirst x (firstDiff x), copySince x (firstDiff x))
 
 --3
 -- Даны типовые аннотации функций. Попытайтесь догадаться, что они делают, и напишите их
 -- рекурсивные реализации (если вы можете предложить несколько вариантов, реализуйте все):
 -- а) [a] -> Int -> a
 -- вернуть i-й элемент списка
+find :: [a] -> Int -> a
+find [] _ = undefined
+find [x] 0 = x
+find [x] _ = undefined
+find (x:xs) 0 = x
+find (x:xs) n = find xs (n-1)
+
 -- б) Eq a => [a] -> a -> Bool
 -- проверить, содержится ли элемент в списке
+contains :: Eq a => [a] -> a -> Bool
+contains [] _ = False
+contains [x] n = x == n
+contains (x:xs) n = x == n || contains xs n
+
 -- в) [a] -> Int -> [a]
--- взять первые i элементов списка
+-- взять первые i элементов списка (copyFirst)
 -- г) a -> Int -> [a]
 -- составить список из i одинаковых элементов
+multiply :: a -> Int -> [a]
+multiply _ 0 = []
+multiply x 1 = [x]
+multiply x n = x:(multiply x (n-1))
+
 -- д) [a] -> [a] -> [a]
 -- combine_plus
 -- е) Eq a => [a] -> [[a]]
 -- сгруппировать элементы по признаку равенства в списки
+group :: Eq a => [a] -> [[a]]
+group [] = [[]]
+group [x] = [[x]]
+-- кажется, я переборщил. не вижу, как справиться без вспомогательной переменной
+
 -- ж) [a] -> [(Int, a)]
 -- перед каждым элементом вставить его индекс
+lengthOf :: [a] -> Int
+lengthOf [] = 0
+lengthOf [x] = 1
+lengthOf(x:xs) = 1 + length xs
+
+indexing :: [a] -> [(Int, a)]
+indexing x = combine_merge (firstNatsAsc (lengthOf x)) x
+
 -- з) Eq a => [a] -> [a]
 -- выбросить из списка все повторные элементы
+-- тут тоже как-то круто...
