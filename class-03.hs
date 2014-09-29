@@ -1,3 +1,7 @@
+import Data.Char
+import Data.List
+import Numeric
+
 {-
 Явная рекурсия в решениях хотя и допускается, но не приветствуется. Старайтесь обходиться стандартными
 функциями, используя при этом создание функций «на лету». Пытайтесь максимально упростить уже написанные
@@ -17,7 +21,22 @@
 -}
 
 f11a :: Integral a => [a] -> [a]
-f11a = map undefined
+f11a = map (*2)
+
+f11b :: Integral a => [a] -> [a]
+f11b = map (\x -> if even x then 2*x else x)
+
+f11c :: Integral a => [a] -> [a]
+f11c = map (\x -> if odd x then 0 else x)
+
+f11d :: Integral a => [a] -> a -> [a]
+f11d l k = filter (<= k) l
+
+f11e :: Integral a => [a] -> [a]
+f11e = filter (<0)
+
+f11f :: Integral a => [a] -> [a]
+f11f = filter even . filter (>0)
 
 {-
  1.2 Дан список декартовых координат точек на плоскости (пар вещественных чисел).
@@ -25,6 +44,18 @@ f11a = map undefined
   a) отфильтровать список так, чтобы в нём остались точки из заданной координатной четверти;
   b) преобразовать декартовы координаты в полярные.
 -}
+
+type Point = (Double, Double)
+
+f12a :: [Point] -> Int -> [Point]
+f12a l k
+  | k == 1 = filter (\x -> fst x > 0) (filter (\x -> snd x > 0) l)
+  | k == 2 = filter (\x -> fst x < 0) (filter (\x -> snd x > 0) l)
+  | k == 3 = filter (\x -> fst x < 0) (filter (\x -> snd x < 0) l)
+  | otherwise = filter (\x -> fst x > 0) (filter (\x -> snd x < 0) l)
+  
+f12b :: [Point] -> [Point]
+f12b = map (\x -> (fst x * fst x + snd x * snd x, atan (snd x / fst x)))
 
 {-
  1.3 Дан список слов.
@@ -34,7 +65,13 @@ f11a = map undefined
 -}
 
 f13a :: [String] -> [String]
-f13a = map undefined
+f13a = map (map toUpper)
+
+f13b :: Int -> [String] -> [String]
+f13b k = filter (\x -> length x == k)
+
+f13c :: Char -> [String] -> [String]
+f13c l = filter (\x -> head x == l)
 
 {-
 2. Формирование числовых последовательностей (iterate).
@@ -46,7 +83,19 @@ f13a = map undefined
 -}
 
 nats :: [Integer]
-nats = iterate undefined 0
+nats = iterate (+1) 0
+
+evens :: [Integer]
+evens = iterate (+2) 0
+
+tseq :: [Double]
+tseq = iterate ((/2) . (+1)) 1
+
+englets :: [Char]
+englets = take 26 (iterate succ 'a')
+
+binaries :: [String]
+binaries = map (\x -> showIntAtBase 2 intToDigit x "") (iterate (+1) 0)
 
 {-
 3. Группировка списков.
@@ -60,8 +109,19 @@ nats = iterate undefined 0
   e) Дан список. Определить длину самого длинного подсписка, содержащего подряд идущие одинаковые элементы.
 -}
 
+f3a :: [Char] -> [[Char]]
+f3a = groupBy (\x y -> isDigit x == isDigit y)
+
+f3b :: [Point] -> [[Point]]
+f3b = groupBy (\x y -> (fst x * fst y > 0) && (snd x * snd y > 0))
+
+f3c :: Int -> [a] -> [[a]]
+f3c k x = if length x <= k then [x] else [fst (splitAt k x)] ++ f3c k (snd (splitAt k x))
+
 f3d :: [a] -> Int -> Int -> [[a]]
-f3d xs n m = undefined
+f3d xs n m
+  | length xs <= m = [take n xs]
+  | otherwise = [take n xs] ++ (f3d (drop m xs) n m)
 
 -- Должно быть True
 test_f3d = f3d [1..10] 4 2 == [[1,2,3,4],[3,4,5,6],[5,6,7,8],[7,8,9,10],[9,10]]
@@ -78,3 +138,23 @@ test_f3d = f3d [1..10] 4 2 == [[1,2,3,4],[3,4,5,6],[5,6,7,8],[7,8,9,10],[9,10]]
     называется элемент, больший своих соседей.
  e) Дан список. Продублировать все его элементы.
 -}
+
+f4a :: String -> Int
+f4a = length . filter (isNumber) . f3a
+  where
+    isNumber :: String -> Bool
+    isNumber = and . map (\x -> isDigit x)
+	
+f4b :: (Int -> Bool) -> Int -> Int -> Int
+f4b p a b = sum (filter p (takeWhile (< b) fibs \\ takeWhile (< a) fibs))
+  where
+    fibs = 0 : 1 : zipWith (+) fibs (tail fibs)
+
+f4c :: String -> Int -> [Char]
+f4c s n = map (\x -> fst x) (take n (sortBy (\ x y -> if snd x > snd y then LT else GT) (map (\x -> (head x, length x)) (group (sort s)))))
+
+f4d :: [Int] -> [Int]
+f4d l = map (\x -> fst x) (filter (\x -> snd x == 0) (zipWith (\x y -> if (x > fst y) && (x > snd y) then (x, 0) else (x, 1)) (drop 1 (take (length l - 1) l))(zip (drop 2 l) (take (length l - 2) l))))
+
+f4e :: [a] -> [a]
+f4e = intercalate [] . (map (\x -> [x, x]))
