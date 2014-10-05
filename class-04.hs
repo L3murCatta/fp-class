@@ -24,6 +24,39 @@
      функции должно быть значение, возвращаемое по умолчанию).
 -}
 
+filter' :: (a -> Bool) -> [a] -> [a]
+filter' p = foldr (\x acc -> if p x then x : acc else acc) []
+
+f1a :: [Int] -> Int
+f1a = foldl (+) 0 . filter' even
+f1a_test1 = f1a [1..5] == 6
+f1a_test2 = f1a [] == 0
+f1a_test3 = f1a [1,3..10] == 0
+
+f1b :: [Double] -> (Double, Double)
+f1b = foldl (\(s, p) x -> (s+x, p*x)) (0, 1)
+f1b_test1 = f1b [1..5] == (15.0, 120.0)
+f1b_test2 = f1b [0.5, 1, 1.5] == (3.0, 0.75)
+f1b_test3 = f1b [1.5, 4, 2.5] == (8.0, 15.0)
+
+f1c :: [Double] -> Double
+f1c = fst . foldl (\(s, acc) x -> ((s*acc+x)/(acc+1), acc+1)) (0, 0)
+f1c_test1 = f1c [1..5] == 3.0
+f1c_test2 = f1c [2..2] == 0.0
+f1c_test3 = f1c [] == 0.0
+
+f1d :: [Double] -> Double
+f1d = foldl1 (\x y -> if x < y then x else y)
+f1d_test1 = f1d [1] == 1.0
+f1d_test2 = f1d [1, -2] == -2.0
+f1d_test3 = f1d [1..10] == 1.0
+
+f1e :: [Int] -> Int -> Int
+f1e l x = if (filter' odd l == []) then x else foldl1 (\x y -> if x < y then x else y) (filter' odd l)
+f1e_test1 = f1e [1..10] 2 == 1
+f1e_test2 = f1e [2, 4..10] 2 == 2
+f1e_test3 = f1e [] 2 == 2
+
 {-
  2. Свёртки, формирующие списки
   a) Сформировать список, содержащий каждый второй элемент исходного.
@@ -41,6 +74,78 @@
   n) Даны два списка одинаковой длины. Сформировать список, состоящий из результатов применения
      заданной функции двух аргументов к соответствующим элементам исходных списков.
 -}
+
+reverse' :: [a] -> [a]
+reverse' = foldl (flip (:)) []
+
+map' :: (a -> b) -> [a] -> [b]
+map' f xs = foldr ((:) . f) [] xs
+
+length' :: [a] -> Int
+length' = foldr ((+).(\x -> 1)) 0
+
+f2a :: [a] -> [a]
+f2a = fst . foldr (\x (acc, fl) -> if fl then (x:acc, not fl) else (acc, not fl)) ([], True)
+f2a_test1 = f2a [1..10] == [2,4,6,8,10]
+f2a_test2 = f2a [1] == [1]
+f2a_test3 = f2a [1, 2] == [2]
+
+f2b :: Int -> [a] -> [a]
+f2b n l = reverse' (fst (foldl (\(acc, cnt) x -> if (cnt<n) then (x:acc, cnt+1) else (acc, cnt+1)) ([], 0) l))
+f2b_test1 = f2b 4 [1..10] == [1,2,3,4]
+f2b_test2 = f2b 4 [1..3] == [1,2,3]
+f2b_test3 = f2b 0 [1..3] == []
+
+take' :: Int -> [a] -> [a]
+take' = f2b
+
+drop' :: Int -> [a] -> [a]
+drop' n l = reverse' (fst (foldl (\(acc, cnt) x -> if (cnt>=n) then (x:acc, cnt+1) else (acc, cnt+1)) ([], 0) l))
+
+el' :: Int -> [a] -> a
+el' n = head . drop' (n-1)
+
+zip' :: [a] -> [b] -> [(a, b)]
+zip' x y = reverse' (fst (foldl (\(acc, cnt) x -> ((x, el' cnt y):acc, cnt+1)) ([], 1) x))
+
+zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith' f x y = reverse' (fst (foldl (\(acc, cnt) x -> ((f x (el' cnt y)):acc, cnt+1)) ([], 1) x))
+
+f2c :: Int -> [a] -> [a]
+f2c n l = fst (foldr (\x (acc, cnt) -> if (cnt<n) then (x:acc, cnt+1) else (acc, cnt+1)) ([], 0) l)
+f2c_test1 = f2c 4 [1..10] == [7,8,9,10]
+f2c_test2 = f2c 4 [1..3] == [1,2,3]
+f2c_test3 = f2c 0 [1..3] == []
+
+f2d :: [Double] -> [Double]
+f2d l = reverse' (fst (foldl (\(acc, pred) x -> if (x > pred) then (x:acc, x) else (acc, x)) ([], head l + 1) l))
+f2d_test1 = f2d [1..3] == [2.0, 3.0]
+f2d_test2 = f2d [3..1] == []
+f2d_test3 = f2d [1, 2, 1] == [2.0]
+
+f2e :: [Double] -> [Double]
+f2e l = map' (\x -> fst x) (filter' (\x -> snd x == 0) (zipWith' (\x y -> if (x < fst y) && (x < snd y) then (x, 0) else (x, 1)) (drop' 1 (take' (length' l - 1) l))(zip' (drop' 2 l) (take' (length' l - 2) l))))
+f2e_test1 = f2e [1..3] == []
+f2e_test2 = f2e [1,2,1,2,1] == [1.0]
+f2e_test3 = f2e [3,2,3,2,3] == [2.0,2.0]
+
+f2f :: String -> [String]
+f2f l = fst ((foldr (\x (accl, accw) -> if (x /= ' ') then (accl, x:accw) else if (accw /= "") then (accw:accl, "") else (accl, accw)) ([], "") (' ':l)))
+f2f_test1 = f2f "123 456 789   101" == ["123", "456", "789", "101"]
+f2f_test2 = f2f "123" == ["123"]
+f2f_test3 = f2f " " == []
+
+f2g :: Int -> [a] -> [[a]]
+f2g n x = reverse' (map' reverse' (fst (foldl (\(accl, accw) cur -> if (length' x - 1 == foldr (+) 0 (map' length' accl) + length' accw) then ((cur:accw):accl, []) else if (length' accw < n) then (accl, cur:accw) else (accw:accl, [cur])) ([], []) x)))
+f2g_test1 = f2g 2 [1..10] == [[1,2],[3,4],[5,6],[7,8],[9,10]]
+f2g_test2 = f2g 4 [1..10] == [[1,2,3,4],[5,6,7,8],[9,10]]
+f2g_test3 = f2g 10 [1..10] == [[1,2,3,4,5,6,7,8,9,10]]
+
+f2h :: Int -> Int -> [a] -> [[a]]
+f2h n k x = reverse' (map' reverse' (fst (foldl (\(accl, accw) cur -> if (length' x - 1 == foldr (+) 0 (map' length' accl) - k * length' accl + length' accw) then if (length' accw == n) then ((cur:(take' k accw)):accw:accl, []) else ((cur:accw):accl, []) else if (length' accw < n) then (accl, cur:accw) else (accw:accl, cur:(take' k accw))) ([], []) x)))
+f2h_test1 = f2h 4 2 [1..10] = [[1,2,3,4],[3,4,5,6],[5,6,7,8],[7,8,9,10]]
+f2h_test2 = f2h 3 2 [1..10] = [[1,2,3],[2,3,4],[3,4,5],[4,5,6],[5,6,7],[6,7,8],[7,8,9],[8,9,10]]
+f2h_test3 = f2h 3 1 [1..10] = [[1,2,3],[3,4,5],[5,6,7],[7,8,9],[9,10]] 
 
 {-
  3. Использование свёртки как носителя рекурсии (для запуска свёртки можно использовать список типа [1..n]).
